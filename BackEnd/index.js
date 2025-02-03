@@ -123,10 +123,10 @@ app.post("/attack", (req, res) => {
     const ship = ships.find(s => s.id === shipId);
     if (ship) {
       ship.hits++;
-      res.json({ result: "hit", status: 'success' });
       if (ship.hits === ship.size) {
         res.json({ result: "destroyed", status: 'success'});
       }
+      res.json({ result: "hit", status: 'success' });
     }
     board[y][x] = "X";
     

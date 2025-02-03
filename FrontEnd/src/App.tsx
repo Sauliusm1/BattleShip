@@ -1,33 +1,49 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
+import { useState, useEffect } from 'react'
 import './App.css'
+import { ButtonGroup, Container } from 'react-bootstrap';
+import GridRow from './GridRow';
 
 function App() {
-  const [count, setCount] = useState(0)
+  const [board, setBoard] = useState([[""]]);
+  const [message, setMessage] = useState("");
+
+  useEffect(() => {
+    fetch("http://localhost:3000/board")
+      .then((res) => res.json())
+      .then((data) => setBoard(data.board));
+  }, []);
+
+  const handleAttack = async (x: number, y: number) => {
+    const res = await fetch("http://localhost:3000/attack", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ x, y })
+    });
+    const data = await res.json();
+    setMessage(`Attack at (${x}, ${y}): ${data.result}`);
+    setBoard((prevBoard: string[][]) => {
+      const newBoard: string[][] = prevBoard.map(row => [...row]);
+      newBoard[y][x] = data.result === "hit" || data.result === "destroyed" ? "X" : "O";
+      return newBoard;
+    });
+  };
 
   return (
     <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
+      <div className="flex flex-col items-center p-4">
+        <h1 className="text-xl font-bold mb-4">Battleship Game</h1>
+        <Container className="d-grid gap-2">
+          <ButtonGroup vertical >
+            {
+              board.map((row, y) => (
+                <GridRow y={y} row={row} handleAttack={handleAttack} />
+
+
+              ))}
+          </ButtonGroup>
+        </Container>
+        {message && <p className="mt-4 font-medium">{message}</p>}
       </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
     </>
   )
 }
