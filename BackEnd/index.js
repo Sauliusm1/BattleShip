@@ -24,7 +24,10 @@ let maxIter = 10000;
 let iter = 0;
 let totalShots = 25;
 let currentShots = 0;
+let destroyedShips = 0;
 function placeShips() {
+  currentShots = 0;
+  destroyedShips = 0;
   iter = 0;
   for (let ship of SHIPS) {
     let placed = false;
@@ -131,13 +134,15 @@ app.post("/attack", (req, res) => {
     if (ship) {
       ship.hits++;
       if (ship.hits === ship.size) {
+        destroyedShips++;
+        if (destroyedShips >= ships.length) {
+          res.json({ result: "victory", status: 'success' });
+        }
         res.json({ result: "destroyed", status: 'success' });
       }
       res.json({ result: "hit", status: 'success' });
     }
     board[y][x] = "X";
-
-
   } else {
     board[y][x] = "O";
     res.json({ result: "miss", status: 'success' });
