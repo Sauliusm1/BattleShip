@@ -1,4 +1,5 @@
 const express = require("express");
+const { v4: uuidv4 } = require('uuid');
 
 const app = express();
 const PORT = 3000;
@@ -18,16 +19,26 @@ const SHIPS = [
   { id: "9", size: 1 }
 ];
 
-let board = Array(BOARD_SIZE).fill(null).map(() => Array(BOARD_SIZE).fill("."));
-let ships = [];
-let maxIter = 10000;
-let iter = 0;
-let totalShots = 25;
-let currentShots = 0;
-let destroyedShips = 0;
-function placeShips() {
-  currentShots = 0;
-  destroyedShips = 0;
+
+
+let games = {};
+
+function createGame() {
+  const gameId = uuidv4();
+  let board = Array(BOARD_SIZE).fill(null).map(() => Array(BOARD_SIZE).fill("."));
+  let ships = [];
+  let totalShots = 25;
+  let currentShots = 0;
+  let destroyedShips = 0;
+
+  placeShips(board, ships)
+
+  games[gameId] = { board, ships, totalShots, currentShots, destroyedShips };
+  return gameId;
+}
+function placeShips(board, ships) {
+  let maxIter = 10000;
+  let iter = 0;
   iter = 0;
   for (let ship of SHIPS) {
     let placed = false;
@@ -38,8 +49,8 @@ function placeShips() {
       let y = Math.floor(Math.random() * BOARD_SIZE);
       let horizontal = Math.random() > 0.5;
 
-      if (canPlaceShip(x, y, ship.size, horizontal)) {
-        addShip(x, y, ship.size, horizontal, ship.id);
+      if (canPlaceShip(x, y, ship.size, horizontal, board)) {
+        addShip(x, y, ship.size, horizontal, ship.id, board);
         ships.push({ ...ship, size: ship.size, hits: 0 });
         placed = true;
         break;
@@ -47,7 +58,7 @@ function placeShips() {
       else {
         //It is possible to randomly place ships in such a way that all ships do not fit
         if (iter === maxIter) {
-          resetShips();
+          resetShips(ships);
           placeShips();
           break;
         }
@@ -58,14 +69,14 @@ function placeShips() {
   }
 }
 
-function resetShips() {
+function resetShips(ships) {
 
   while (ships.length > 0) {
     ships.pop()
   }
 }
 
-function canPlaceShip(x, y, size, horizontal) {
+function canPlaceShip(x, y, size, horizontal, board) {
   if (horizontal) {
     if (x + size > BOARD_SIZE) return false;
     if (x - 1 > -1) {
@@ -105,7 +116,7 @@ function canPlaceShip(x, y, size, horizontal) {
   return true;
 }
 
-function addShip(x, y, size, horizontal, id) {
+function addShip(x, y, size, horizontal, id, board) {
   for (let i = 0; i < size; i++) {
     if (horizontal) {
       board[y][x + i] = id;
@@ -114,37 +125,43 @@ function addShip(x, y, size, horizontal, id) {
     }
   }
 }
+app.get("/new-game", (req, res) => {
+  const gameId = createGame();
+  res.json({ gameId });
+});
 
-app.get("/board", (req, res) => {
-  placeShips();
-  res.json({ board: board.map(row => row.map(cell => (cell !== "." ? "." : cell))) });//Not showing where the ships are placed to the client
+app.get("/board/:gameId", (req, res) => {
+  const { gameId } = req.params;
+  const game = games[gameId];
+  if (!game) return res.status(404).json({ error: "Game not found" });
+  res.json({ board: game.board.map(row => row.map(cell => (cell !== "." ? "." : cell))) });//Not showing where the ships are placed to the client
 });
 
 app.post("/attack", (req, res) => {
-  const { x, y } = req.body;
-  if (currentShots >= totalShots) {
+  const { gameId, x, y } = req.body;
+  const game = games[gameId];
+  if (!game) return res.status(404).json({ error: "Game not found" });
+  if (game.currentShots >= game.totalShots) {
     res.json({ result: "Game over", status: 'success' })
   }
-  if (board[y][x] && board[y][x] !== "X" && board[y][x] !== "O") {
-    currentShots++;
-  }
-  if (board[y][x] !== "." && board[y][x] !== "X" && board[y][x] !== "O") {
-    const shipId = board[y][x];
-    const ship = ships.find(s => s.id === shipId);
+  if (game.board[y][x] !== "." && game.board[y][x] !== "X" && game.board[y][x] !== "O") {
+    const shipId = game.board[y][x];
+    const ship = game.ships.find(s => s.id === shipId);
     if (ship) {
       ship.hits++;
       if (ship.hits === ship.size) {
-        destroyedShips++;
-        if (destroyedShips >= ships.length) {
+        game.destroyedShips++;
+        if (game.destroyedShips >= game.ships.length) {
           res.json({ result: "victory", status: 'success' });
         }
         res.json({ result: "destroyed", status: 'success' });
       }
       res.json({ result: "hit", status: 'success' });
     }
-    board[y][x] = "X";
+    game.board[y][x] = "X";
   } else {
-    board[y][x] = "O";
+    game.currentShots++;
+    game.board[y][x] = "O";
     res.json({ result: "miss", status: 'success' });
   }
 });
