@@ -42,8 +42,8 @@ function App() {
 
   return (
     <>
-      <div className="flex flex-col items-center p-4">
-        <h1 className="text-xl font-bold mb-4">Battleship Game</h1>
+      <div>
+        <h1>Battleship Game</h1>
         <Container className="d-grid gap-2">
           <ButtonGroup vertical >
             {
@@ -54,7 +54,7 @@ function App() {
               ))}
           </ButtonGroup>
         </Container>
-        {message && <p className="mt-4 font-medium">{message}</p>}
+        {message && <p>{message}</p>}
       </div>
     </>
   )
