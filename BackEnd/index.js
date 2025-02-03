@@ -6,16 +6,16 @@ app.use(express.json());
 
 const BOARD_SIZE = 10;
 const SHIPS = [
-  { id: 0, size: 5 },
-  { id: 1, size: 4 },
-  { id: 2, size: 3 },
-  { id: 3, size: 3 },
-  { id: 4, size: 2 },
-  { id: 5, size: 2 },
-  { id: 6, size: 2 },
-  { id: 7, size: 1 },
-  { id: 8, size: 1 },
-  { id: 9, size: 1 },
+  { id: "0", size: 5 },
+  { id: "1", size: 4 },
+  { id: "2", size: 3 },
+  { id: "3", size: 3 },
+  { id: "4", size: 2 },
+  { id: "5", size: 2 },
+  { id: "6", size: 2 },
+  { id: "7", size: 1 },
+  { id: "8", size: 1 },
+  { id: "9", size: 1 }
 ];
 
 let board = Array(BOARD_SIZE).fill(null).map(() => Array(BOARD_SIZE).fill("."));
@@ -27,25 +27,24 @@ function placeShips() {
   for (let ship of SHIPS) {
     let placed = false;
     iter = 0;
-    console.log(ship)
+    if(ships.length === SHIPS.length)
+    {break;}
     while (!placed) {
       let x = Math.floor(Math.random() * BOARD_SIZE);
       let y = Math.floor(Math.random() * BOARD_SIZE);
       let horizontal = Math.random() > 0.5;
       
       if (canPlaceShip(x, y, ship.size, horizontal)) {
-        addShip(x, y, ship.size, horizontal);
+        addShip(x, y, ship.size, horizontal,ship.id);
         ships.push({ ...ship, size: ship.size, hits: 0 });
         placed = true;
-        console.log(ship)
         break;
       }
       else{
         //It is possible to randomly place ships in such a way that all ships do not fit
-
         if(iter === maxIter){
-
           resetShips();
+          placeShips();
           break;
         }
         iter++;
@@ -105,9 +104,9 @@ function canPlaceShip(x, y, size, horizontal) {
 function addShip(x, y, size, horizontal, id) {
   for (let i = 0; i < size; i++) {
     if (horizontal) {
-      board[y][x + i] = String(id);
+      board[y][x + i] = id;
     } else {
-      board[y + i][x] = String(id);
+      board[y + i][x] = id;
     }
   }
 }
@@ -119,15 +118,14 @@ app.get("/board", (req, res) => {
 
 app.post("/attack", (req, res) => {
   const { x, y } = req.body;
-  console.log("HALP");
-  if (board[y][x] !== "." || board[y][x] !== "X" ||board[y][x] !== "O") {
+  if (board[y][x] !== "." && board[y][x] !== "X" && board[y][x] !== "O") {
     const shipId = board[y][x];
-    const ship = ships.find(s => s.id[0] === shipId);
+    const ship = ships.find(s => s.id === shipId);
     if (ship) {
       ship.hits++;
-      res.json({ result: "hit" });
+      res.json({ result: "hit", status: 'success' });
       if (ship.hits === ship.size) {
-        res.json({ result: "destroyed" });
+        res.json({ result: "destroyed", status: 'success'});
       }
     }
     board[y][x] = "X";
@@ -135,9 +133,8 @@ app.post("/attack", (req, res) => {
 
   } else {
     board[y][x] = "O";
-    res.json({ result: "miss" });
+    res.json({ result: "miss", status: 'success' });
   }
-  console.log(res)
 });
 
 app.listen(PORT, () => {
