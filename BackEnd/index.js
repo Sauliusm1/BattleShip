@@ -33,7 +33,7 @@ function placeShips() {
       
       if (canPlaceShip(x, y, ship.size, horizontal)) {
         addShip(x, y, ship.size, horizontal);
-        ships.push({ ...ship, hits: 0 });
+        ships.push({ ...ship, size: ship.size, hits: 0 });
         placed = true;
 
       }
@@ -92,7 +92,7 @@ function canPlaceShip(x, y, size, horizontal) {
       if(x+1 < BOARD_SIZE && board[y+i][x+1]!==".") return false;
     }
     if(y+size < BOARD_SIZE){
-      if( board[y+size][x]!==".") return false;
+      if(board[y+size][x]!==".") return false;
       if(x-1 > -1 && board[y+size][x-1]!==".") return false;
       if(x+1 < BOARD_SIZE && board[y+size][x+1]!==".") return false;
     }
@@ -100,19 +100,40 @@ function canPlaceShip(x, y, size, horizontal) {
   return true;
 }
 
-function addShip(x, y, size, horizontal) {
+function addShip(x, y, size, horizontal, id) {
   for (let i = 0; i < size; i++) {
     if (horizontal) {
-      board[y][x + i] = "S";
+      board[y][x + i] = String(id);
     } else {
-      board[y + i][x] = "S";
+      board[y + i][x] = String(id);
     }
   }
 }
 
 app.get("/board", (req, res) => {
   placeShips();
-  res.json({ board: board.map(row => row.map(cell => (cell === "S" ? "." : cell))) });//Not showing where the ships are placed to the client
+  res.json({ board: board.map(row => row.map(cell => (cell !== "." ? "." : cell))) });//Not showing where the ships are placed to the client
+});
+
+app.post("/attack", (req, res) => {
+  const { x, y } = req.body;
+  if (board[y][x] !== "." || board[y][x] !== "X" ||board[y][x] !== "O") {
+    const shipId = board[y][x];
+    const ship = ships.find(s => s.id[0] === shipId);
+    if (ship) {
+      ship.hits++;
+      res.json({ result: "hit" });
+      if (ship.hits === ship.size) {
+        res.json({ result: "destroyed" });
+      }
+    }
+    board[y][x] = "X";
+    
+
+  } else {
+    board[y][x] = "O";
+    res.json({ result: "miss" });
+  }
 });
 
 app.listen(PORT, () => {
