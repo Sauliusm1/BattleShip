@@ -20,12 +20,14 @@ const SHIPS = [
 
 let board = Array(BOARD_SIZE).fill(null).map(() => Array(BOARD_SIZE).fill("."));
 let ships = [];
-let maxIter = 1000;
+let maxIter = 10000;
 let iter = 0;
 function placeShips() {
   iter = 0;
   for (let ship of SHIPS) {
     let placed = false;
+    iter = 0;
+    console.log(ship)
     while (!placed) {
       let x = Math.floor(Math.random() * BOARD_SIZE);
       let y = Math.floor(Math.random() * BOARD_SIZE);
@@ -35,11 +37,14 @@ function placeShips() {
         addShip(x, y, ship.size, horizontal);
         ships.push({ ...ship, size: ship.size, hits: 0 });
         placed = true;
-
+        console.log(ship)
+        break;
       }
       else{
         //It is possible to randomly place ships in such a way that all ships do not fit
+
         if(iter === maxIter){
+
           resetShips();
           break;
         }
@@ -47,9 +52,6 @@ function placeShips() {
       }
     }
 
-  }
-  if(ships.length <= 0){
-    placeShips();
   }
 }
 
@@ -117,6 +119,7 @@ app.get("/board", (req, res) => {
 
 app.post("/attack", (req, res) => {
   const { x, y } = req.body;
+  console.log("HALP");
   if (board[y][x] !== "." || board[y][x] !== "X" ||board[y][x] !== "O") {
     const shipId = board[y][x];
     const ship = ships.find(s => s.id[0] === shipId);
@@ -134,6 +137,7 @@ app.post("/attack", (req, res) => {
     board[y][x] = "O";
     res.json({ result: "miss" });
   }
+  console.log(res)
 });
 
 app.listen(PORT, () => {
