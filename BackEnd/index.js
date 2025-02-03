@@ -22,27 +22,28 @@ let board = Array(BOARD_SIZE).fill(null).map(() => Array(BOARD_SIZE).fill("."));
 let ships = [];
 let maxIter = 10000;
 let iter = 0;
+let totalShots = 25;
+let currentShots = 0;
 function placeShips() {
   iter = 0;
   for (let ship of SHIPS) {
     let placed = false;
     iter = 0;
-    if(ships.length === SHIPS.length)
-    {break;}
+    if (ships.length === SHIPS.length) { break; }
     while (!placed) {
       let x = Math.floor(Math.random() * BOARD_SIZE);
       let y = Math.floor(Math.random() * BOARD_SIZE);
       let horizontal = Math.random() > 0.5;
-      
+
       if (canPlaceShip(x, y, ship.size, horizontal)) {
-        addShip(x, y, ship.size, horizontal,ship.id);
+        addShip(x, y, ship.size, horizontal, ship.id);
         ships.push({ ...ship, size: ship.size, hits: 0 });
         placed = true;
         break;
       }
-      else{
+      else {
         //It is possible to randomly place ships in such a way that all ships do not fit
-        if(iter === maxIter){
+        if (iter === maxIter) {
           resetShips();
           placeShips();
           break;
@@ -54,9 +55,9 @@ function placeShips() {
   }
 }
 
-function resetShips(){
+function resetShips() {
 
-  while(ships.length > 0){
+  while (ships.length > 0) {
     ships.pop()
   }
 }
@@ -64,38 +65,38 @@ function resetShips(){
 function canPlaceShip(x, y, size, horizontal) {
   if (horizontal) {
     if (x + size > BOARD_SIZE) return false;
-    if(x-1 > -1){
-      if(board[y][x-1]!==".") return false;
-      if(y-1 > -1 && board[y-1][x-1]!==".") return false;
-      if(y+1 < BOARD_SIZE && board[y+1][x-1]!==".") return false;
+    if (x - 1 > -1) {
+      if (board[y][x - 1] !== ".") return false;
+      if (y - 1 > -1 && board[y - 1][x - 1] !== ".") return false;
+      if (y + 1 < BOARD_SIZE && board[y + 1][x - 1] !== ".") return false;
     }
     for (let i = 0; i < size; i++) {
-      if(y-1 > -1 && board[y-1][x+i]!==".") return false;
-      if(board [y][x+i]!==".") return false;
-      if(y+1 < BOARD_SIZE && board[y+1][x+i]!==".") return false;
+      if (y - 1 > -1 && board[y - 1][x + i] !== ".") return false;
+      if (board[y][x + i] !== ".") return false;
+      if (y + 1 < BOARD_SIZE && board[y + 1][x + i] !== ".") return false;
     }
-    if(x+size < BOARD_SIZE) { 
-      if(board[y][x+size]!==".") return false;
-      if(y-1 > -1 && board[y-1][x+size]!==".") return false;
-      if(y+1 < BOARD_SIZE && board[y+1][x+size]!==".") return false;
+    if (x + size < BOARD_SIZE) {
+      if (board[y][x + size] !== ".") return false;
+      if (y - 1 > -1 && board[y - 1][x + size] !== ".") return false;
+      if (y + 1 < BOARD_SIZE && board[y + 1][x + size] !== ".") return false;
     }
-  } 
+  }
   else {
     if (y + size > BOARD_SIZE) return false;
-    if (y-1 > -1){
-      if(board[y-1][x]!==".") return false;
-      if(x-1 > -1 && board[y-1][x-1]!==".") return false;
-      if(x+1 < BOARD_SIZE && board[y-1][x+1]!==".") return false;
+    if (y - 1 > -1) {
+      if (board[y - 1][x] !== ".") return false;
+      if (x - 1 > -1 && board[y - 1][x - 1] !== ".") return false;
+      if (x + 1 < BOARD_SIZE && board[y - 1][x + 1] !== ".") return false;
     }
     for (let i = 0; i < size; i++) {
-      if(x-1 > -1 && board[y+i][x-1]!==".") return false;
-      if(board [y+i][x]!==".") return false;
-      if(x+1 < BOARD_SIZE && board[y+i][x+1]!==".") return false;
+      if (x - 1 > -1 && board[y + i][x - 1] !== ".") return false;
+      if (board[y + i][x] !== ".") return false;
+      if (x + 1 < BOARD_SIZE && board[y + i][x + 1] !== ".") return false;
     }
-    if(y+size < BOARD_SIZE){
-      if(board[y+size][x]!==".") return false;
-      if(x-1 > -1 && board[y+size][x-1]!==".") return false;
-      if(x+1 < BOARD_SIZE && board[y+size][x+1]!==".") return false;
+    if (y + size < BOARD_SIZE) {
+      if (board[y + size][x] !== ".") return false;
+      if (x - 1 > -1 && board[y + size][x - 1] !== ".") return false;
+      if (x + 1 < BOARD_SIZE && board[y + size][x + 1] !== ".") return false;
     }
   }
   return true;
@@ -118,18 +119,24 @@ app.get("/board", (req, res) => {
 
 app.post("/attack", (req, res) => {
   const { x, y } = req.body;
+  if(currentShots >= totalShots){
+    res.json({result: "Game over", status: 'success'})
+  }
+  if(board[y][x] && board[y][x] !== "X" && board[y][x] !== "O"){
+    currentShots++;
+  }
   if (board[y][x] !== "." && board[y][x] !== "X" && board[y][x] !== "O") {
     const shipId = board[y][x];
     const ship = ships.find(s => s.id === shipId);
     if (ship) {
       ship.hits++;
       if (ship.hits === ship.size) {
-        res.json({ result: "destroyed", status: 'success'});
+        res.json({ result: "destroyed", status: 'success' });
       }
       res.json({ result: "hit", status: 'success' });
     }
     board[y][x] = "X";
-    
+
 
   } else {
     board[y][x] = "O";
