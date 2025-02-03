@@ -119,10 +119,10 @@ app.get("/board", (req, res) => {
 
 app.post("/attack", (req, res) => {
   const { x, y } = req.body;
-  if(currentShots >= totalShots){
-    res.json({result: "Game over", status: 'success'})
+  if (currentShots >= totalShots) {
+    res.json({ result: "Game over", status: 'success' })
   }
-  if(board[y][x] && board[y][x] !== "X" && board[y][x] !== "O"){
+  if (board[y][x] && board[y][x] !== "X" && board[y][x] !== "O") {
     currentShots++;
   }
   if (board[y][x] !== "." && board[y][x] !== "X" && board[y][x] !== "O") {
